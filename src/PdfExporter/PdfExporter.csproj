@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>Aspose.Cloud.Marketplace.Report</RootNamespace>
+    <AssemblyName>acm.PdfExporter</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Aspose.BarCode-Cloud" Version="19.10.1" />
+    <PackageReference Include="Aspose.Pdf-Cloud" Version="20.4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TemplateExporter\TemplateExporter.csproj" />
+  </ItemGroup>
+
+</Project>

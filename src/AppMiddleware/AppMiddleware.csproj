@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RootNamespace>Aspose.Cloud.Marketplace.App.Middleware</RootNamespace>
+    <AssemblyName>acm.AppMiddleware</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Utils.cs~RF5527917.TMP" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.2.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AppCommon\AppCommon.csproj" />
+    <ProjectReference Include="..\ElasticsearchLogging\ElasticsearchLogging.csproj" />
+  </ItemGroup>
+
+</Project>

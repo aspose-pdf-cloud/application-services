@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Aspose.Cloud.Marketplace.Report</RootNamespace>
+    <AssemblyName>acm.TemplateExporter</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Interface\IReportModel.cs~RF20e5e186.TMP" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="YamlDotNet" Version="8.1.0" />
+    <PackageReference Include="Stubble.Core" Version="1.6.3" />
+    <PackageReference Include="Stubble.Extensions.JsonNet" Version="1.2.3" />
+    <PackageReference Include="Stubble.Helpers" Version="1.0.25" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AppCommon\AppCommon.csproj" />
+  </ItemGroup>
+
+</Project>
