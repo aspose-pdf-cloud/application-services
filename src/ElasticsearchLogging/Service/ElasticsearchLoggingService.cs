@@ -24,6 +24,7 @@ namespace Aspose.Cloud.Marketplace.Services
             , string[] elasticsearchUris, string errorIndexName, string accesslogIndexName
             , string setuplogIndexName
             , string apiId = null, string apiKey = null
+            , string username = null, string password = null
             , int?timeoutSeconds = null, bool debug = false)
         {
             _logger = logger;
@@ -31,11 +32,11 @@ namespace Aspose.Cloud.Marketplace.Services
             if (null != elasticsearchUris && elasticsearchUris.Length > 0)
             {
                 if (!string.IsNullOrEmpty(errorIndexName))
-                    errorLogReporter = new ElasticsearchReporter(elasticsearchUris, errorIndexName, apiId: apiId, apiKey: apiKey, timeoutSeconds: timeoutSeconds, debug: debug);
+                    errorLogReporter = new ElasticsearchReporter(elasticsearchUris, errorIndexName, apiId: apiId, apiKey: apiKey, username:username, password:password, timeoutSeconds: timeoutSeconds, debug: debug);
                 if (!string.IsNullOrEmpty(accesslogIndexName))
-                    accessLogReporter = new ElasticsearchReporter(elasticsearchUris, accesslogIndexName, apiId: apiId, apiKey: apiKey, timeoutSeconds: timeoutSeconds, debug: debug);
+                    accessLogReporter = new ElasticsearchReporter(elasticsearchUris, accesslogIndexName, apiId: apiId, apiKey: apiKey, username: username, password: password, timeoutSeconds: timeoutSeconds, debug: debug);
                 if (!string.IsNullOrEmpty(setuplogIndexName))
-                    setupLogReporter = new ElasticsearchReporter(elasticsearchUris, setuplogIndexName, apiId: apiId, apiKey: apiKey, timeoutSeconds: timeoutSeconds, debug: debug);
+                    setupLogReporter = new ElasticsearchReporter(elasticsearchUris, setuplogIndexName, apiId: apiId, apiKey: apiKey, username: username, password: password, timeoutSeconds: timeoutSeconds, debug: debug);
             }
         }
 

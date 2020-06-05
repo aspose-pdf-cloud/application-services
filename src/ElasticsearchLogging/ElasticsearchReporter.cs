@@ -27,6 +27,7 @@ namespace Aspose.Cloud.Marketplace.Services
         public string Index => _indexName;
         public ElasticsearchReporter(string[] elasticsearchUris, string indexName
             , string apiId = null, string apiKey = null
+            , string username = null, string password = null
             , int? timeoutSeconds = null, bool debug = false)
         {
             _uris = elasticsearchUris;
@@ -39,10 +40,16 @@ namespace Aspose.Cloud.Marketplace.Services
                 new StaticConnectionPool(_uris.Select(u => new Uri(u)));
             var _settings = new ConnectionSettings(pool)
                         .DefaultIndex(indexName)
-                        .ApiKeyAuthentication(apiId, apiKey)
                         //.DefaultMappingFor<ElasticsearchErrorDocument>(m => m)
                         //.IndexName())
                         ;
+            if (!string.IsNullOrEmpty(apiId))
+                _settings.ApiKeyAuthentication(apiId, apiKey);
+            if (!string.IsNullOrEmpty(username))
+            {
+                _settings.BasicAuthentication(username, password);
+                _settings.ServerCertificateValidationCallback((o, certificate, chain, errors) => true);
+            }
             if (timeoutSeconds.HasValue)
             {
                 _settings = _settings.RequestTimeout(TimeSpan.FromSeconds(timeoutSeconds.Value))
