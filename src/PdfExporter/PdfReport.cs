@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Aspose.Pdf.Cloud.Sdk.Api;
 using Aspose.Pdf.Cloud.Sdk.Model;
+using Aspose.BarCode.Cloud.Sdk.Interfaces;
 using Aspose.Cloud.Marketplace.Common;
 
 [assembly: InternalsVisibleTo("acm.PdfExporter.Tests")]

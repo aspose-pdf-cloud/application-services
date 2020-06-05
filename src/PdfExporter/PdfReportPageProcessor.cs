@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 using System.Web;
 using Aspose.Cloud.Marketplace.Report.Utils;
 using Aspose.Cloud.Marketplace.Common;
+using Aspose.BarCode.Cloud.Sdk.Interfaces;
+using ReportModel = Aspose.Cloud.Marketplace.Report.Model;
+
 namespace Aspose.Cloud.Marketplace.Report
 {
     public partial class PdfReport : IReport<IPdfApi, IBarcodeApi>
@@ -127,64 +130,22 @@ namespace Aspose.Cloud.Marketplace.Report
                 {
                     if (contentItem.Location == null || (contentItem?.Location?.Empty() ?? false))
                         throw new ArgumentException($"no location for ${contentItem.Url}");
-                    string imageStorageFile = null;
-                    string imageStorageFolder = Folder;
+
                     await using (var imageStream = new MemoryStream())
                     {
-                        var uri = new Uri(contentItem.Url);
+                        var imageInfo = await fetchImage(new Uri(contentItem.Url), imageStream);
 
-                        var queryParams = HttpUtility.ParseQueryString(uri.Query);
-                        if (uri.Scheme.ToLower() == "file")
-                        {
-                            switch (uri.Host)
-                            {
-                                case "issue-link-qr":
-                                    //if (_documentOptions?.GenerateQRCode ?? _defaultDocumentOptions.GenerateQRCode)
-                                    {
-                                        imageStorageFile = $"{Guid.NewGuid()}.png";
-                                        imageStorageFolder = _parent.TmpFolderPath;
-                                        var linkValues = queryParams.GetValues("link");
-                                        if (null != linkValues && linkValues.Count() > 0)
-                                        {
-                                            await GenerateQr(imageStorageFile, linkValues[0], null, imageStorageFolder);
-                                        }
-                                        //var barcodeImageWidthPoints = _dims.points(barcodeImage.Width, barcodeImage.HorizontalResolution);
-                                        //var barcodeImageHeightPoints = _dims.points(barcodeImage.Height, barcodeImage.VerticalResolution);
-                                    }
-
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            using (HttpClient client = new HttpClient())
-                            {
-                                using (var response = await client.GetAsync(contentItem.Url))
-                                {
-                                    response.EnsureSuccessStatusCode();
-
-                                    await using (var stream = await response.Content.ReadAsStreamAsync())
-                                    {
-                                        await stream.CopyToAsync(imageStream);
-                                    }
-                                }
-                            }
-
-                        }
-                        if (imageStream.Length > 0 || !string.IsNullOrEmpty(imageStorageFile))
+                        if (imageStream.Length > 0 || !string.IsNullOrEmpty(imageInfo.FilePath))
                         {
                             imageStream.Position = 0;
-                            string imageFilePath = imageStorageFile;
-                            if (!string.IsNullOrEmpty(imageFilePath) && !string.IsNullOrEmpty(imageStorageFolder))
-                                imageFilePath = $"{imageStorageFolder}/{imageStorageFile}";
-
+                            
                             await _taskMeasurer.Run(() => _pdfApi.PostInsertImageAsync(pageNumber: pageNumber
                                 , llx: Convert.ToInt32(Math.Truncate(Llx(contentItem.Location).Value))
                                 , lly: Convert.ToInt32(Math.Truncate(Lly(contentItem.Location).Value))
                                 , urx: Convert.ToInt32(Math.Truncate(Urx(contentItem.Location).Value))
                                 , ury: Convert.ToInt32(Math.Truncate(Ury(contentItem.Location).Value))
-                                , imageFilePath: imageFilePath
-                                , image: string.IsNullOrEmpty(imageStorageFile) ? imageStream : null
+                                , imageFilePath: imageInfo.FilePath
+                                , image: imageStream.Length > 0 ? imageStream : null
                                 , name: FileName, storage: Storage, folder: Folder)
                             , "060_InsertImage");
                         }
@@ -192,10 +153,57 @@ namespace Aspose.Cloud.Marketplace.Report
                 }
                 else if (contentItem?.Rows != null)
                 {
-                    await _taskMeasurer.Run(() => _pdfApi.PostPageTablesAsync(pageNumber: pageNumber, tables: new List<Table>() { CreateTable(contentItem) }
+                    await _taskMeasurer.RunSync(async () => await _pdfApi.PostPageTablesAsync(pageNumber: pageNumber, tables: new List<Table>() { await CreateTable(contentItem) }
                         , name: FileName, storage: Storage, folder: Folder)
                     , "070_AddPageTables");
                 }
+            }
+
+            private async Task<ImageInfo> fetchImage(Uri uri,  MemoryStream imageStream)
+            {
+                ImageInfo result = new ImageInfo();
+                var queryParams = HttpUtility.ParseQueryString(uri.Query);
+                if (uri.Scheme.ToLower() == "file")
+                {
+                    switch (uri.Host)
+                    {
+                        case "issue-link-qr":
+                            //if (_documentOptions?.GenerateQRCode ?? _defaultDocumentOptions.GenerateQRCode)
+                            {
+                                var imageStorageFile = $"{Guid.NewGuid()}.png";
+                                var imageStorageFolder = _parent.TmpFolderPath;
+                                var linkValues = queryParams.GetValues("link");
+                                if (null != linkValues && linkValues.Count() > 0)
+                                {
+                                    var info = await GenerateQr(imageStorageFile, linkValues[0], null, imageStorageFolder);
+                                    result.Height = info?.ImageHeight ?? 100;
+                                    result.Width = info?.ImageWidth ?? 100;
+                                }
+                                result.FilePath = $"{imageStorageFolder}/{imageStorageFile}";
+                                //var barcodeImageWidthPoints = _dims.points(barcodeImage.Width, barcodeImage.HorizontalResolution);
+                                //var barcodeImageHeightPoints = _dims.points(barcodeImage.Height, barcodeImage.VerticalResolution);
+                            }
+
+                            break;
+                    }
+                }
+                else
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        using (var response = await client.GetAsync(uri))
+                        {
+                            response.EnsureSuccessStatusCode();
+
+                            await using (var stream = await response.Content.ReadAsStreamAsync())
+                            {
+                                await stream.CopyToAsync(imageStream);
+                            }
+                        }
+                    }
+
+                }
+                return result;
             }
 
             public double? Llx(Model.Location l)
@@ -266,7 +274,7 @@ namespace Aspose.Cloud.Marketplace.Report
 
 
             
-            public Table CreateTable(Model.PageContentItem item)
+            public async Task<Table> CreateTable(Model.PageContentItem item)
             {
                 if (item?.Rows == null)
                     return null;
@@ -279,16 +287,26 @@ namespace Aspose.Cloud.Marketplace.Report
                     List<Cell> cells = new List<Cell>();
                     foreach (var c in r.Cells)
                     {
+                        Cell cell = null;
                         List<TextRect> paragraphs = new List<TextRect>();
+                        List<ImageFragment> images = new List<ImageFragment>();
+                        if (!string.IsNullOrEmpty(c.Url))
+                        {
+                            await using (var imageStream = new MemoryStream())
+                            {
+                                var imageInfo = await fetchImage(new Uri(c.Url), imageStream);
+                                images.Add(new ImageFragment(ImageFile: imageInfo.FilePath, FixWidth: imageInfo.Width, FixHeight: imageInfo.Height));
+                            }
+                        }
                         if (!string.IsNullOrEmpty(c.Text))
                             paragraphs.Add(new TextRect(HttpUtility.HtmlDecode(c.Text)));
                         if (c.TextLines != null && c.TextLines.Count > 0)
                             paragraphs.AddRange(c.TextLines.Select(l => new TextRect(HttpUtility.HtmlDecode(l))));
-
                         //if (paragraphs.Count == 0)
                         //    paragraphs.Add(new TextRect(""));
 
-                        Cell cell = new Cell(Paragraphs: paragraphs)
+
+                        cell = new Cell(Paragraphs: paragraphs, Images: images)
                         {
                             DefaultCellTextState = GetFontState(c.Font),
                             RowSpan = c.RowSpan,
@@ -297,10 +315,12 @@ namespace Aspose.Cloud.Marketplace.Report
                             VerticalAlignment = c.VerticalAlignment?.ToEnum(VerticalAlignment.None) ?? defaultContentVerticalAlignment,
                             //BackgroundImageFile = "c:\\_\\code_img.png"
                         };
+                        
                         if (c.Border != null)
                             cell.Border = BorderInfo(new[] { c.Border, item.Border });
                         if (c.Margin != null)
                             cell.Margin = MarginInfo(c?.Margin, item?.DefaultContentMargin);
+                        
                         cells.Add(cell);
                     }
                     rows.Add(new Row(Cells: cells));
@@ -399,14 +419,13 @@ namespace Aspose.Cloud.Marketplace.Report
                 return new Color(col.A, col.R, col.G, col.B);
             }
 
-            internal async Task GenerateQr(string fileName, string text, MemoryStream outputStream, string folder)
+            internal async Task<Aspose.BarCode.Cloud.Sdk.Model.ResultImageInfo> GenerateQr(string fileName, string text, MemoryStream outputStream, string folder)
             {
-                await using (var ms = new MemoryStream())
-                {
-                    _taskMeasurer.RunSync(() => BarcodeApi.BarCodePutBarCodeGenerateFile(new Aspose.BarCode.Cloud.Sdk.Model.Requests.BarCodePutBarCodeGenerateFileRequest(file: ms, text: text, type: "qr", format: "PNG", codeLocation: "None"/*, autoSize:"false", imageWidth: 100, imageHeight:100*/
-                        , name: fileName, storage: Storage, folder: folder))
-                    , "100_BarCodeGenerate");
-                }
+                var imageInfo = _taskMeasurer.RunSync(() => 
+                    BarcodeApi.PutBarcodeGenerateFile(new Aspose.BarCode.Cloud.Sdk.Model.Requests.PutBarcodeGenerateFileRequest(
+                        text: text, type: "qr", format: "PNG", textLocation: "None", name: fileName, storage: Storage, folder: folder))
+                , "100_BarCodeGenerate");
+                
                 if (outputStream != null)
                 {
                     string filePath = fileName;
@@ -420,7 +439,15 @@ namespace Aspose.Cloud.Marketplace.Report
                         await s.CopyToAsync(outputStream);
                     }
                 }
+                return imageInfo;
             }
+        }
+
+        internal class ImageInfo
+        {
+            public string FilePath { get; set; }
+            public int Width { get; set; }
+            public int Height { get; set; }
         }
     }
 }

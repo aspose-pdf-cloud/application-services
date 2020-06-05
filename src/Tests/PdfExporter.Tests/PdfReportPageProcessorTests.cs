@@ -9,6 +9,7 @@ using Aspose.Cloud.Marketplace.Report;
 using Aspose.Cloud.Marketplace.Report.Model;
 using PdfApi = Aspose.Pdf.Cloud.Sdk.Api;
 using PdfModel = Aspose.Pdf.Cloud.Sdk.Model;
+using BarcodeIntf = Aspose.BarCode.Cloud.Sdk.Interfaces;
 using Moq;
 using Xunit;
 
@@ -17,12 +18,12 @@ namespace Aspose.Cloud.Marketplace.App.PdfExporter.Tests
     public class PdfReportPageProcessorFixture
     {
         public Mock<PdfApi.IPdfApi> PdfApiMock;
-        public Mock<IBarcodeApi> BarcodeMock;
+        public Mock<BarcodeIntf.IBarcodeApi> BarcodeMock;
 
         public PdfReportPageProcessorFixture()
         {
             PdfApiMock = Setup(new Mock<PdfApi.IPdfApi>());
-            BarcodeMock = Setup(new Mock<IBarcodeApi>());
+            BarcodeMock = Setup(new Mock<BarcodeIntf.IBarcodeApi>());
         }
         public static Mock<PdfApi.IPdfApi> Setup(Mock<PdfApi.IPdfApi> mock)
         {
@@ -74,9 +75,9 @@ namespace Aspose.Cloud.Marketplace.App.PdfExporter.Tests
             return mock;
         }
 
-        public static Mock<IBarcodeApi> Setup(Mock<IBarcodeApi> mock)
+        public static Mock<BarcodeIntf.IBarcodeApi> Setup(Mock<BarcodeIntf.IBarcodeApi> mock)
         {
-            mock.Setup(f => f.BarCodePutBarCodeGenerateFile(It.IsAny<BarcodeRequests.BarCodePutBarCodeGenerateFileRequest>()))
+            mock.Setup(f => f.PutBarcodeGenerateFile(It.IsAny<BarcodeRequests.PutBarcodeGenerateFileRequest>()))
                 //.Verifiable();
                 .Callback(() => { });
             return mock;
@@ -87,7 +88,7 @@ namespace Aspose.Cloud.Marketplace.App.PdfExporter.Tests
     {
         internal PdfReportPageProcessorFixture Fixture;
         internal Mock<PdfApi.IPdfApi> PdfApiMock => Fixture.PdfApiMock;
-        internal Mock<IBarcodeApi> BarcodeMock => Fixture.BarcodeMock;
+        internal Mock<BarcodeIntf.IBarcodeApi> BarcodeMock => Fixture.BarcodeMock;
         public PdfReportPageProcessor_Tests(PdfReportPageProcessorFixture fixture)
         {
             Fixture = fixture;
@@ -133,7 +134,7 @@ namespace Aspose.Cloud.Marketplace.App.PdfExporter.Tests
 
             await processor.GenerateQr("qr.png", "dummy", null, "a/b/c");
 
-            BarcodeMock.Verify(e => e.BarCodePutBarCodeGenerateFile(It.IsAny<BarcodeRequests.BarCodePutBarCodeGenerateFileRequest>()), Times.Once);
+            BarcodeMock.Verify(e => e.PutBarcodeGenerateFile(It.IsAny<BarcodeRequests.PutBarcodeGenerateFileRequest>()), Times.Once);
 
             BarcodeMock.Invocations.Clear();
 
@@ -144,7 +145,7 @@ namespace Aspose.Cloud.Marketplace.App.PdfExporter.Tests
                 await processor.GenerateQr("qr.png", "dummy", ms, "a/b/c");
                 actualContent = ms.ToArray();
             }
-            BarcodeMock.Verify(e => e.BarCodePutBarCodeGenerateFile(It.IsAny<BarcodeRequests.BarCodePutBarCodeGenerateFileRequest>()), Times.Once);
+            BarcodeMock.Verify(e => e.PutBarcodeGenerateFile(It.IsAny<BarcodeRequests.PutBarcodeGenerateFileRequest>()), Times.Once);
             PdfApiMock.Verify(e => e.DownloadFileAsync("a/b/c/qr.png", null, null), Times.Exactly(1));
             Assert.True(actualContent.SequenceEqual(expectedContent), "Barcode bytes do not match");
         }
@@ -361,7 +362,7 @@ namespace Aspose.Cloud.Marketplace.App.PdfExporter.Tests
         {
             var processor = await GetPageProcessor();
 
-            var actual = processor.CreateTable(new PageContentItem()
+            var actual = await processor.CreateTable(new PageContentItem()
             {
                 Rows = new List<TableRow>()
                 {

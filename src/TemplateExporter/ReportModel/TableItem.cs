@@ -9,6 +9,7 @@ namespace Aspose.Cloud.Marketplace.Report.Model
     public class TableCell
     {
         public string Text { get; set; }
+        public string Url { get; set; }
         public List<string> TextLines { get; set; }
         public Font Font { get; set; }
         public Border Border { get; set; }

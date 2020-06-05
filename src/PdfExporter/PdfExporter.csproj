@@ -6,8 +6,8 @@
     <AssemblyName>acm.PdfExporter</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Aspose.BarCode-Cloud" Version="19.10.1" />
-    <PackageReference Include="Aspose.Pdf-Cloud" Version="20.4.0" />
+    <PackageReference Include="Aspose.BarCode-Cloud" Version="20.5.1" />
+    <PackageReference Include="Aspose.Pdf-Cloud" Version="20.5.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TemplateExporter\TemplateExporter.csproj" />
